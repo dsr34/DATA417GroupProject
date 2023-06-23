@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Suburb Statistics</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        #suburbDropdown {
+            margin-bottom: 20px;
+        }
+
+        #chartContainer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+        }
+
+        .chart {
+            width: 45%;
+        }
+
+        canvas {
+            background-color: black;
+        }
+    </style>
+</head>
+<body>
+    <h1>Suburb Water Pipeline Statistics</h1>
+
+    <div id="suburbDropdown">
+        <label for="suburbSelect">Select Suburb:</label>
+        <select id="suburbSelect"></select>
+    </div>
+<table id="descriptionTable">
+        <tr>
+            <td id="chart1Description">
+                <p>The construction material used in pipes can affect water quality. Different materials can interact with the water flowing through the pipes in various ways, potentially influencing its quality. There are several ways that the pipe construction material can impact water quality:</p>
+                <p>Lead or corroded iron pipes can introduce contaminants into the water supply if they degrade over time.</p>
+                <p>Some material types (e.g. copper, galvanised steel, iron, concrete) can promote the formation of scale or deposits on the inner surface of the pipes.</p>
+                <p>Some pipe materials can absorb or retain contaminants from the surrounding environment. This can include substances like pesticides, hydrocarbons or other pollutants that may find their way into the water supply.</p>
+             
+            </td>
+            <td id="chart2Description">
+                <p>The age of pipes can impact on the reliability and quality of water.</p>
+                <p>Aging pipes are more prone to leaks and breaks which can interrupt supply and introduce contaminants.</p>
+                <p>Over time pipes can corrode (particularly those made from iron and lead). This can result in the release of rust, sediment or other harmful substances in the water.</p>
+                <p>As pipes age, they can accumulate mineral deposits on their inner surfaces.</p>
+                <p>The lifespan of a pipe can range from between 25 to 75 years depending on the material used.</p>
+            
+            </td>
+        </tr>
+    </table>
+    <div id="chartContainer">
+        <div class="chart">
+            <canvas id="yearsChart"></canvas>
+        </div>
+        <div class="chart">
+            <canvas id="percentageChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+    
+
+    const suburbSelect = document.getElementById('suburbSelect');
+    const yearsChartCanvas = document.getElementById('yearsChart');
+    const percentageChartCanvas = document.getElementById('percentageChart');
+    let jsonData; // Declare jsonData variable
+    let yearsChart; // Declare yearsChart variable
+    let percentageChart; // Declare percentageChart variable
+        
+    fetch('http://localhost:8080/DynaWeb/LargeJSON.json')
+    .then(response => response.json())
+    .then(data => {
+      jsonData = data; // Assign retrieved JSON data to jsonData variable
+
+      // Fill the suburb dropdown with options
+      for (let i = 0; i < data.length; i++) {
+        const option = document.createElement('option');
+        option.value = data[i].Suburb;
+        option.text = data[i].Suburb;
+        suburbSelect.appendChild(option);
+      }
+
+
+        // Fill the suburb dropdown with options
+        for (let i = 0; i < jsonData.length; i++) {
+            const option = document.createElement('option');
+            option.value = jsonData[i].Suburb;
+            option.text = jsonData[i].Suburb;
+            suburbSelect.appendChild(option);
+        }
+        suburbSelect.addEventListener('change', function() {
+            const selectedSuburb = this.value;
+            const selectedData = jsonData.find(item => item.Suburb === selectedSuburb);
+
+            // Clear previous charts
+            const yearsChartContext = yearsChartCanvas.getContext('2d');
+            const percentageChartContext = percentageChartCanvas.getContext('2d');
+            yearsChartContext.clearRect(0, 0, yearsChartCanvas.width, yearsChartCanvas.height);
+            percentageChartContext.clearRect(0, 0, percentageChartCanvas.width, percentageChartCanvas.height);
+
+            // Create the count years bar graph
+            const yearsData = {
+                labels: Object.keys(selectedData).filter(key => key.startsWith('%')),
+                datasets: [{
+                    label: 'Pipe Materials',
+                    data: Object.entries(selectedData)
+                    .filter(([key, value]) => typeof value === 'number' && key.startsWith('%') && value !== null)
+                    .map(([key, value]) => value),
+                    backgroundColor: 'rgba(239, 245, 81, 0.8)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            };
+            console.log(yearsData);
+            new Chart(yearsChartContext, {
+                type: 'bar',
+                data: yearsData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Pipe Materials'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+         //// Create the percentage pie chart
+            const percentageData = {
+                    labels: Object.keys(selectedData).filter(key => key.endsWith('Years')),
+                    datasets: [{
+                        label: 'Age of the Pipes',
+                        data: Object.entries(selectedData)
+                            .filter(([key, value]) => typeof value === 'number' && key.endsWith('Years') && value !== null)
+                            .map(([key, value]) => value),
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)',
+                            'rgba(255, 159, 64, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(153, 102, 255, 1)',
+                            'rgba(255, 159, 64, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                };
+            console.log(percentageData);
+                percentageChart = new Chart(percentageChartContext, {
+                    type: 'pie',
+                    data: percentageData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Age of the Pipes'
+                            }
+                        }
+                    }
+                });
+            });
+        })
+        .catch(error => {
+          console.log('Error:', error);
+        });
+    </script>
+</body>
+</html>
